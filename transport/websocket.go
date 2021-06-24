@@ -96,31 +96,33 @@ type WebsocketTransport struct {
 	TLSClientConfig  *tls.Config
 }
 
-func (wst *WebsocketTransport) Connect(url string) (conn Connection, err error) {
-	dialer := websocket.Dialer{}
-	socket, _, err := dialer.Dial(url, wst.RequestHeader)
+// Connect to the given url
+func (t *WebsocketTransport) Connect(url string) (Connection, error) {
+	dialer := websocket.Dialer{TLSClientConfig: t.TLSClientConfig}
+	socket, _, err := dialer.Dial(url, t.Headers)
 	if err != nil {
 		return nil, err
 	}
-
-	return &WebsocketConnection{socket, wst}, nil
+	return &WebsocketConnection{socket, t}, nil
 }
 
-func (wst *WebsocketTransport) HandleConnection(
-	w http.ResponseWriter, r *http.Request) (conn Connection, err error) {
-
-	if r.Method != "GET" {
-		http.Error(w, upgradeFailed+ErrorMethodNotAllowed.Error(), 503)
-		return nil, ErrorMethodNotAllowed
+// HandleConnection
+func (t *WebsocketTransport) HandleConnection(w http.ResponseWriter, r *http.Request) (Connection, error) {
+	if r.Method != http.MethodGet {
+		http.Error(w, upgradeFailed+errMethodNotAllowed.Error(), http.StatusServiceUnavailable)
+		return nil, errMethodNotAllowed
 	}
 
-	socket, err := websocket.Upgrade(w, r, nil, wst.BufferSize, wst.BufferSize)
+	socket, err := (&websocket.Upgrader{
+		ReadBufferSize:  t.BufferSize,
+		WriteBufferSize: t.BufferSize,
+	}).Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, upgradeFailed+err.Error(), 503)
-		return nil, ErrorHttpUpgradeFailed
+		http.Error(w, upgradeFailed+err.Error(), http.StatusServiceUnavailable)
+		return nil, errHttpUpgradeFailed
 	}
 
-	return &WebsocketConnection{socket, wst}, nil
+	return &WebsocketConnection{socket, t}, nil
 }
 
 /**
