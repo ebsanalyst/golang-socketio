@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/gorilla/websocket"
 	"io/ioutil"
+	"crypto/tls"
 	"net/http"
 	"time"
 )
@@ -31,6 +32,10 @@ type WebsocketConnection struct {
 	transport *WebsocketTransport
 }
 
+type WebsocketTransportParams struct {
+	Headers         http.Header
+	TLSClientConfig *tls.Config
+}
 func (wsc *WebsocketConnection) GetMessage() (message string, err error) {
 	wsc.socket.SetReadDeadline(time.Now().Add(wsc.transport.ReceiveTimeout))
 	msgType, reader, err := wsc.socket.NextReader()
@@ -135,4 +140,12 @@ func GetDefaultWebsocketTransport() *WebsocketTransport {
 		SendTimeout:    WsDefaultSendTimeout,
 		BufferSize:     WsDefaultBufferSize,
 	}
+}
+
+
+func NewWebsocketTransport(params WebsocketTransportParams) *WebsocketTransport {
+	tr := DefaultWebsocketTransport()
+	tr.Headers = params.Headers
+	tr.TLSClientConfig = params.TLSClientConfig
+	return tr
 }
