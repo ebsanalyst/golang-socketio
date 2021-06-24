@@ -87,14 +87,13 @@ func (wsc *WebsocketConnection) PingParams() (interval, timeout time.Duration) {
 }
 
 type WebsocketTransport struct {
-	PingInterval   time.Duration
-	PingTimeout    time.Duration
-	ReceiveTimeout time.Duration
-	SendTimeout    time.Duration
-
-	BufferSize int
-
-	RequestHeader http.Header
+	PingInterval     time.Duration
+	PingTimeout      time.Duration
+	ReceiveTimeout   time.Duration
+	SendTimeout      time.Duration
+	BufferSize       int
+        Headers          http.Header
+	TLSClientConfig  *tls.Config
 }
 
 func (wst *WebsocketTransport) Connect(url string) (conn Connection, err error) {
