@@ -132,7 +132,7 @@ func (wst *WebsocketTransport) Serve(w http.ResponseWriter, r *http.Request) {}
 /**
 Returns websocket connection with default params
 */
-func GetDefaultWebsocketTransport() *WebsocketTransport {
+func GeDefaultWebsocketTransport() *WebsocketTransport {
 	return &WebsocketTransport{
 		PingInterval:   WsDefaultPingInterval,
 		PingTimeout:    WsDefaultPingTimeout,
@@ -144,7 +144,7 @@ func GetDefaultWebsocketTransport() *WebsocketTransport {
 
 
 func TlsWebsocketTransport(params WebsocketTransportParams) *WebsocketTransport {
-	tr := DefaultWebsocketTransport()
+	tr := GetDefaultWebsocketTransport()
 	tr.Headers = params.Headers
 	tr.TLSClientConfig = params.TLSClientConfig
 	return tr
