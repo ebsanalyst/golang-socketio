@@ -2,15 +2,16 @@ package transport
 
 import (
 	"errors"
-	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"crypto/tls"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
-	upgradeFailed     = "Upgrade failed: "
+	upgradeFailed = "Upgrade failed: "
 
 	WsDefaultPingInterval   = 30 * time.Second
 	WsDefaultPingTimeout    = 60 * time.Second
@@ -31,11 +32,11 @@ type WebsocketConnection struct {
 	socket    *websocket.Conn
 	transport *WebsocketTransport
 }
-
 type WebsocketTransportParams struct {
 	Headers         http.Header
 	TLSClientConfig *tls.Config
 }
+
 func (wsc *WebsocketConnection) GetMessage() (message string, err error) {
 	wsc.socket.SetReadDeadline(time.Now().Add(wsc.transport.ReceiveTimeout))
 	msgType, reader, err := wsc.socket.NextReader()
@@ -87,42 +88,42 @@ func (wsc *WebsocketConnection) PingParams() (interval, timeout time.Duration) {
 }
 
 type WebsocketTransport struct {
-	PingInterval     time.Duration
-	PingTimeout      time.Duration
-	ReceiveTimeout   time.Duration
-	SendTimeout      time.Duration
-	BufferSize       int
-        Headers          http.Header
+	PingInterval   time.Duration
+	PingTimeout    time.Duration
+	ReceiveTimeout time.Duration
+	SendTimeout    time.Duration
+	BufferSize     int
+	Headers         http.Header
 	TLSClientConfig  *tls.Config
 }
 
-// Connect to the given url
-func (t *WebsocketTransport) Connect(url string) (Connection, error) {
-	dialer := websocket.Dialer{TLSClientConfig: t.TLSClientConfig}
-	socket, _, err := dialer.Dial(url, t.Headers)
+func (wst *WebsocketTransport) Connect(url string) (conn Connection, err error) {
+    dialer := websocket.Dialer{TLSClientConfig: wst.TLSClientConfig}
+	socket, _, err := dialer.Dial(url, wst.Headers)
 	if err != nil {
 		return nil, err
 	}
-	return &WebsocketConnection{socket, t}, nil
+
+	
+
+	return &WebsocketConnection{socket, wst}, nil
 }
 
-// HandleConnection
-func (t *WebsocketTransport) HandleConnection(w http.ResponseWriter, r *http.Request) (Connection, error) {
-	if r.Method != http.MethodGet {
-		http.Error(w, upgradeFailed+errMethodNotAllowed.Error(), http.StatusServiceUnavailable)
-		return nil, errMethodNotAllowed
+func (wst *WebsocketTransport) HandleConnection(
+	w http.ResponseWriter, r *http.Request) (conn Connection, err error) {
+
+	if r.Method != "GET" {
+		http.Error(w, upgradeFailed+ErrorMethodNotAllowed.Error(), 503)
+		return nil, ErrorMethodNotAllowed
 	}
 
-	socket, err := (&websocket.Upgrader{
-		ReadBufferSize:  t.BufferSize,
-		WriteBufferSize: t.BufferSize,
-	}).Upgrade(w, r, nil)
+	socket, err := websocket.Upgrade(w, r, nil, wst.BufferSize, wst.BufferSize)
 	if err != nil {
-		http.Error(w, upgradeFailed+err.Error(), http.StatusServiceUnavailable)
-		return nil, errHttpUpgradeFailed
+		http.Error(w, upgradeFailed+err.Error(), 503)
+		return nil, ErrorHttpUpgradeFailed
 	}
 
-	return &WebsocketConnection{socket, t}, nil
+	return &WebsocketConnection{socket, wst}, nil
 }
 
 /**
@@ -133,7 +134,7 @@ func (wst *WebsocketTransport) Serve(w http.ResponseWriter, r *http.Request) {}
 /**
 Returns websocket connection with default params
 */
-func GeDefaultWebsocketTransport() *WebsocketTransport {
+func GetDefaultWebsocketTransport() *WebsocketTransport {
 	return &WebsocketTransport{
 		PingInterval:   WsDefaultPingInterval,
 		PingTimeout:    WsDefaultPingTimeout,
@@ -143,8 +144,7 @@ func GeDefaultWebsocketTransport() *WebsocketTransport {
 	}
 }
 
-
-func TlsWebsocketTransport(Headers  http.Header, TLSClientConfig *tls.Config ) *WebsocketTransport {
+func TlsWebsocketTransport(Headers http.Header ,TLSClientConfig *tls.Config) *WebsocketTransport {
 	tr := GetDefaultWebsocketTransport()
 	tr.Headers = Headers
 	tr.TLSClientConfig = TLSClientConfig
