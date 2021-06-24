@@ -143,7 +143,7 @@ func GetDefaultWebsocketTransport() *WebsocketTransport {
 }
 
 
-func NewWebsocketTransport(params WebsocketTransportParams) *WebsocketTransport {
+func TlsWebsocketTransport(params WebsocketTransportParams) *WebsocketTransport {
 	tr := DefaultWebsocketTransport()
 	tr.Headers = params.Headers
 	tr.TLSClientConfig = params.TLSClientConfig
